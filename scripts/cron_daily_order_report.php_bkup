@@ -1,0 +1,181 @@
+<?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+set_time_limit(0);
+ini_set('memory_limit', '-1');
+require '/home/cloudpanel/htdocs/www.americanswan.com/current/app/Mage.php';
+Mage::app('default');
+
+$fromDate = date("Y")."-".date("m")."-01 00:00:00";
+$toDate = date("Y").'-'.date("m").'-'.date("d").' 23:59:59';
+
+$dateFromFormat = date("d M" strtotime($fromDate));
+$toFromFormat = date("d M, Y" strtotime($toDate));
+//echo "<pre>";
+
+$collection = Mage::getModel('sales/order')->getCollection();
+$collection->addFieldToSelect(array());
+$collection->getSelect()->columns(array('orders' => new Zend_Db_Expr("COUNT(DISTINCT `main_table`.`entity_id`)")));
+$collection->getSelect()->join('sales_flat_order_item as oitem', 'main_table.entity_id = `oitem`.`order_id`', 
+							array('sum(oitem.qty_ordered) as totQty', 
+								'SUM(oitem.qty_ordered*oitem.product_mrp) as totMrp', 
+								'SUM(oitem.qty_ordered*oitem.original_price) as totOriginalPrice',
+								'SUM(oitem.discount_amount) as totCouponDiscount',
+								'SUM(oitem.product_mrp - oitem.original_price) AS totCatalogDiscount',
+								'((SUM(oitem.product_mrp - oitem.original_price) * 100) / SUM(oitem.qty_ordered*oitem.product_mrp)) AS catalogDiscPercentage'
+								));
+$collection->getSelect()->columns(array('orderDate' => new Zend_Db_Expr("DATE_FORMAT(`main_table`.`created_at`, '%Y-%m-%d')")));
+$collection->addAttributeToFilter('`oitem`.product_type', array('eq'=>'configurable'));
+$collection->addAttributeToFilter('main_table.created_at', array('from'=>$fromDate, 'to'=>$toDate));
+$collection->addAttributeToFilter('main_table.status', array('neq'=>array('pending')));
+$collection->addAttributeToFilter('main_table.status', array('neq'=>array('COD_Verification_Pending')));
+$collection->addAttributeToFilter('main_table.status', array('neq'=>array('canceled')));
+$collection->getSelect()->group('orderDate');
+//echo $collection->getSelect();die;
+
+$mainData = '';
+foreach($collection as $order) {
+	//print_r($order->getData());
+	$orders = (int)$order->getData('orders');
+	$totQty = (int)$order->getData('totQty');
+	$totMrp = $order->getData('totMrp');
+	$totOriginalPrice = $order->getData('totOriginalPrice');	
+	$totCatalogDiscount = $order->getData('totCatalogDiscount');
+	$catalogDiscPercentage = $order->getData('catalogDiscPercentage');
+		
+	/*
+	 * SUM OF COUPON MONEY
+	 * 
+	 */
+	 
+	 $sumOfCouponMoney = $order->getData('totCouponDiscount');
+	  			
+	/*
+	 * DISCOUNT PERCENTAGE
+	 * 
+	 * discount_percentage = ((sum_of_item_mrp - sum_of_original_price) *100 ) / sum_of_item_mrp)
+	 */
+	
+	$discountPercentage = ((($totMrp - $totOriginalPrice) * 100 )/ $totMrp);
+	
+	/*
+	 * SUM OF CATALOG DISCOUNT VALUE
+	 * 
+	 * sum_of_catalog_discount_value = sum_of_item_mrp - sum_of_original_price
+	 */ 
+	
+	//$sumOfCatalogDiscountValue = ($totMrp - $totOriginalPrice);
+	
+		
+	/*
+	 * COUPON PERCENTAGE
+	 * 
+	 * 
+	 * coupon_percentage = ((sum_of_original_price - sum_of_coupon_money) * 100) / sum_of_original_price)
+	 */  
+	
+	$couponPercentage = (($totOriginalPrice - $sumOfCouponMoney) * 100 )/ $totOriginalPrice;
+	
+	/*
+	 * AMOUNT TO CUSTOMER
+	 * 
+	 * amount_to_customer = sum_of_original_price - sum_of_coupon_money
+	 */ 
+	$sumOfAmountToCustomer = ( $totOriginalPrice - $sumOfCouponMoney);
+	
+	$mainData .= '<tr style="font-size:12px;font-weight:bold;">
+					<td height="30">'.date("d, M", strtotime($order->getData('orderDate'))).'</td>
+					<td height="30">'.$orders.'</td>
+					<td>'.$totQty.'</td>
+					<td>'.number_format($totMrp, 2).'</td>
+					<td>'.number_format($totOriginalPrice, 2).'</td>
+					<td>'.number_format($discountPercentage, 2).'%</td>
+					<td>'.number_format($totCatalogDiscount, 2).'</td>
+					<td>'.number_format($sumOfCouponMoney, 2).'</td>
+					<td>'.number_format($couponPercentage, 2).'%</td>
+					<td>'.number_format($sumOfAmountToCustomer, 2).'</td>
+				</tr>';
+					
+}
+
+
+$mailTemplate = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>American Swan</title>
+</head>
+<body leftmargin="0" topmargin="0" marginwidth="0" marginheight="0">
+<table width="900px" border="0" align="center" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><table width="100%" border="0" cellspacing="0" cellpadding="0">
+     <tr>
+        <td height="30"></td>
+      </tr>      
+      <tr>
+        <td><img src="http://static.americanswan.com/Lecom_Magento/skin/frontend/enterprise/lecom/images-v3/as-logo-new.png" border="0" alt="American Swan"/></td>
+      </tr> 
+      <tr>
+        <td height="10"></td>
+      </tr>            
+	  
+	  <tr>
+		<td valign="top">
+			<table width="100%" border="1" cellspacing="2" cellpadding="2" style="font-size:12px;">				
+				<tr style="font-weight:bold; font-size:12px; color:#fff; background:#002060;">
+					<td height="30">Date</td>
+					<td height="30">Number of Order</td>
+					<td>Sum of Qty</td>
+					<td>Sum of Item MRP</td>
+					<td>Sum of Special Price</td>
+					<td>Discount %</td>
+					<td>Sum of Discount Value</td>
+					<td>Sum of Coupon Money</td>
+					<td>Coupon %</td>
+					<td>Sum of Amount to Customer</td>
+				</tr>
+				'.$mainData.'
+			</table>
+		</td>
+	  </tr>
+	  </table>
+	  </td>
+	  </tr>
+</table>
+</body>
+</html>';
+//echo $mailTemplate;die;
+
+try{
+	$config = array('ssl' => 'tls',
+					'auth' => 'login',
+					'username' => 'AKIAJ3Z55BLHVVKK6WHQ',
+					'password' => 'Aik7+O1z7U8XgoMu3sItIG2Yb1CKrn3EnkRxykXvRfZK');
+	$transport = new Zend_Mail_Transport_Smtp('email-smtp.us-east-1.amazonaws.com', $config);
+	$mail = new Zend_Mail();
+	$mail->setFrom("service@americanswan.com","American Swan");
+	$mail->addTo(array("deepak.kumar@taslc.com", "hariom.patel@taslc.com"));
+	$mail->addCc(array("avinash.kumar@taslc.com"));
+	$mail->setSubject("DAILY SALE SALE REPORT | ".$dateFromFormat." To ".$toFromFormat);
+	$mail->setBodyHtml($mailTemplate);		
+	//file content is attached
+	/*$attachment = file_get_contents($filePath);
+	$mail->createAttachment(
+		$attachment,
+		Zend_Mime::TYPE_OCTETSTREAM,
+		Zend_Mime::DISPOSITION_ATTACHMENT,
+		Zend_Mime::ENCODING_BASE64,
+		'daily_sale_report.csv'
+	);
+	*/ 
+	$mail->send($transport);
+	echo "mail sent"."\n";
+}
+catch(Exception $e)
+{
+	echo $e->getMassage();
+	echo "mail sending error";          
+}
+
+die;
+?>
