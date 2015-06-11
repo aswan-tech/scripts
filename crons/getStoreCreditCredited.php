@@ -118,7 +118,7 @@ foreach($credit_updateds as $credit) {
 }
 $storeCreditFeed = $doc->saveXML();
 if ($foundData) {
-    $filepath = "/mnt/lecomotf/outbound/storeCredit/scf-" . date('YmdHis') . ".xml";
+    $filepath = "/home/cloudpanel/mnt/lecomotf/outbound/storeCredit/scf-" . date('YmdHis') . ".xml";
 	Mage::log("Creating XML to " . $filepath, null, $logfile);
     try {
         $fp = fopen($filepath, 'w');
