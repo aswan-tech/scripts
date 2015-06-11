@@ -4,8 +4,8 @@ date_default_timezone_set('Asia/Kolkata');
 
 class Hourly_Inventory_Update extends Mage_Shell_Abstract
 {
-	protected $inboundDir = "/mnt/lecomotf/inbound/inventory/hourly/";
-	protected $outboundDir = "/mnt/www/Lecom_Magento/var/lecom/inbound/inventory/hourly/";
+	protected $inboundDir = "/home/cloudpanel/mnt/lecomotf/inbound/inventory/hourly/";
+	protected $outboundDir = "/home/cloudpanel/htdocs/www.americanswan.com/current/var/lecom/inbound/inventory/hourly/";
 	//on hold stock and skus
 	protected $onHoldOrders = array();
 	//name of the archived file

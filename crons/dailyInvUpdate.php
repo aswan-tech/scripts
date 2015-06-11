@@ -4,9 +4,9 @@ date_default_timezone_set('Asia/Kolkata');
 
 class Daily_Inventory_Update extends Mage_Shell_Abstract
 {
-	protected $inboundDir = "/mnt/lecomotf/inbound/inventory/daily/";
-	protected $outboundDir = "/mnt/www/Lecom_Magento/var/lecom/inbound/inventory/daily/";
-	protected $csvDir = "/mnt/www/Lecom_Magento/var/lecom/inbound/inventory/final/";
+	protected $inboundDir = "/home/cloudpanel/mnt/lecomotf/inbound/inventory/daily/";
+	protected $outboundDir = "/home/cloudpanel/htdocs/www.americanswan.com/current/var/lecom/inbound/inventory/daily/";
+	protected $csvDir = "/home/cloudpanel/htdocs/www.americanswan.com/current/var/lecom/inbound/inventory/final/";
 	//on hold stock and skus
 	protected $onHoldOrders = array();
 	//name of the archived file
