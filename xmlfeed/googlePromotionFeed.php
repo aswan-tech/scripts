@@ -1,7 +1,7 @@
 <?php
 set_time_limit(0);
-require_once 'home/cloudpanel/htdocs/www.americanswan.com/current/app/Mage.php';
-require_once 'home/cloudpanel/htdocs/www.americanswan.com/current/includes/config.php';
+require_once '/home/cloudpanel/htdocs/www.americanswan.com/current/app/Mage.php';
+require_once '/home/cloudpanel/htdocs/www.americanswan.com/current/includes/config.php';
 
 umask(0);
 $app = Mage::app('default');
